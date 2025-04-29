@@ -70,7 +70,7 @@ export async function authRoutes(app: FastifyInstance) {
     try {
       await request.jwtVerify()
       const userId = request.user.sub
-      const user = await prisma.user.findUnique({
+      const user = await prisma.users.findUnique({
         where: { id: userId },
         select: { id: true, name: true, email: true }
       })

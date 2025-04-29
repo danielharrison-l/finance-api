@@ -7,7 +7,11 @@ import {
   deleteTransaction,
   getBalance,
 } from './services'
-import { createTransactionSchema, updateTransactionSchema } from './schemas'
+import {
+  createTransactionSchema,
+  transactionFiltersSchema,
+  updateTransactionSchema,
+} from './schemas'
 
 export async function transactionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', async (request: FastifyRequest) => {
@@ -23,16 +27,30 @@ export async function transactionRoutes(app: FastifyInstance) {
     return reply.status(201).send(transaction)
   })
 
+  app.get('/balance', async (request: FastifyRequest) => {
+    const userId = request.user.sub
+    const balance = await getBalance(userId)
+    return { balance }
+  })
+
   app.get('/', async (request: FastifyRequest) => {
     const userId = request.user.sub
-    const transactions = await getTransactions(userId)
-    return transactions
+    const filters = transactionFiltersSchema.parse(request.query)
+
+    const result = await getTransactions(userId, filters)
+    return result
   })
 
   app.get('/:id', async (request: FastifyRequest) => {
     const { id } = request.params as { id: string }
     const userId = request.user.sub
+
     const transaction = await getTransactionById(id, userId)
+
+    if (!transaction) {
+      throw new Error('Transaction not found')
+    }
+
     return transaction
   })
 
@@ -42,6 +60,11 @@ export async function transactionRoutes(app: FastifyInstance) {
     const userId = request.user.sub
 
     const transaction = await updateTransaction(id, data, userId)
+
+    if (!transaction) {
+      throw new Error('Transaction not found')
+    }
+
     return reply.status(200).send(transaction)
   })
 
@@ -51,11 +74,5 @@ export async function transactionRoutes(app: FastifyInstance) {
 
     await deleteTransaction(id, userId)
     return reply.status(204).send()
-  })
-
-  app.get('/balance', async (request: FastifyRequest) => {
-    const userId = request.user.sub
-    const balance = await getBalance(userId)
-    return { balance }
   })
 } 

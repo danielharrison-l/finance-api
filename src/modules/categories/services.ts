@@ -1,83 +1,83 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '../../lib/prisma'
 import { CreateCategoryInput, UpdateCategoryInput } from './schemas'
 
 export async function createCategory(data: CreateCategoryInput, userId: string) {
-  const category = await prisma.category.create({
-    data: {
-      ...data,
-      userId,
-    },
-  })
-
-  return category
+  try {
+    const category = await prisma.categories.create({
+      data: {
+        ...data,
+        userId,
+      },
+    })
+    return category
+  } catch (error) {
+    console.error('Error creating category:', error)
+    throw error
+  }
 }
 
 export async function getCategories(userId: string) {
-  const categories = await prisma.category.findMany({
-    where: {
-      userId,
-    },
-  })
-
-  return categories
+  try {
+    const categories = await prisma.categories.findMany({
+      where: {
+        userId,
+      },
+    })
+    return categories
+  } catch (error) {
+    console.error('Error getting categories:', error)
+    throw error
+  }
 }
 
-export async function getCategoryById(id: string, userId: string) {
-  const category = await prisma.category.findFirst({
-    where: {
-      id,
-      userId,
-    },
-  })
-
-  if (!category) {
-    throw new Error('Category not found')
+export async function getCategoryById(categoryId: string, userId: string) {
+  try {
+    const id = parseInt(categoryId)
+    const category = await prisma.categories.findFirst({
+      where: {
+        id,
+        userId,
+      },
+    })
+    return category
+  } catch (error) {
+    console.error('Error getting category:', error)
+    throw error
   }
-
-  return category
 }
 
 export async function updateCategory(
-  id: string,
+  categoryId: string,
   data: UpdateCategoryInput,
   userId: string
 ) {
-  const category = await prisma.category.findFirst({
-    where: {
-      id,
-      userId,
-    },
-  })
-
-  if (!category) {
-    throw new Error('Category not found')
+  try {
+    const id = parseInt(categoryId)
+    const category = await prisma.categories.update({
+      where: {
+        id,
+        userId,
+      },
+      data,
+    })
+    return category
+  } catch (error) {
+    console.error('Error updating category:', error)
+    throw error
   }
-
-  const updatedCategory = await prisma.category.update({
-    where: {
-      id,
-    },
-    data,
-  })
-
-  return updatedCategory
 }
 
-export async function deleteCategory(id: string, userId: string) {
-  const category = await prisma.category.findFirst({
-    where: {
-      id,
-      userId,
-    },
-  })
-
-  if (!category) {
-    throw new Error('Category not found')
+export async function deleteCategory(categoryId: string, userId: string) {
+  try {
+    const id = parseInt(categoryId)
+    await prisma.categories.delete({
+      where: {
+        id,
+        userId,
+      },
+    })
+  } catch (error) {
+    console.error('Error deleting category:', error)
+    throw error
   }
-
-  await prisma.category.delete({
-    where: {
-      id,
-    },
-  })
 } 

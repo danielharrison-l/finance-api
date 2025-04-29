@@ -7,7 +7,7 @@ export async function registerUser(data: CreateUserInput) {
 
   const passwordHash = await hash(password, 6)
 
-  const userWithSameEmail = await prisma.user.findUnique({
+  const userWithSameEmail = await prisma.users.findUnique({
     where: {
       email,
     },
@@ -17,7 +17,7 @@ export async function registerUser(data: CreateUserInput) {
     throw new Error('Email already exists')
   }
 
-  const user = await prisma.user.create({
+  const user = await prisma.users.create({
     data: {
       name,
       email,
@@ -37,7 +37,7 @@ export async function registerUser(data: CreateUserInput) {
 export async function authenticateUser(data: LoginInput) {
   const { email, password } = data
 
-  const user = await prisma.user.findUnique({
+  const user = await prisma.users.findUnique({
     where: {
       email,
     },

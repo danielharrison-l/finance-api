@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma'
-import { CreateTransactionInput, UpdateTransactionInput } from './schemas'
+import { CreateTransactionInput, TransactionFilters, UpdateTransactionInput } from './schemas'
 
 export async function createTransaction(data: CreateTransactionInput, userId: string) {
-  const category = await prisma.category.findFirst({
+  const category = await prisma.categories.findFirst({
     where: {
       id: data.categoryId,
       userId,
@@ -17,7 +17,7 @@ export async function createTransaction(data: CreateTransactionInput, userId: st
     throw new Error('Transaction type does not match category type')
   }
 
-  const transaction = await prisma.transaction.create({
+  const transaction = await prisma.transactions.create({
     data: {
       ...data,
       userId,
@@ -30,30 +30,99 @@ export async function createTransaction(data: CreateTransactionInput, userId: st
   return transaction
 }
 
-export async function getTransactions(userId: string) {
-  const transactions = await prisma.transaction.findMany({
-    where: {
-      userId,
-    },
-    include: {
-      category: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  })
+export async function getTransactions(userId: string, filters: TransactionFilters) {
+  const {
+    categoryId,
+    startDate,
+    endDate,
+    type,
+    search,
+    minAmount,
+    maxAmount,
+    page,
+    limit,
+    sortBy,
+    order,
+  } = filters
 
-  return transactions
+  const where = {
+    userId,
+    ...(categoryId && { categoryId }),
+    ...(type && { type }),
+    ...(search && {
+      title: {
+        contains: search,
+        mode: 'insensitive' as const,
+      },
+    }),
+    ...(startDate && {
+      createdAt: {
+        gte: new Date(startDate),
+      },
+    }),
+    ...(endDate && {
+      createdAt: {
+        lte: new Date(endDate),
+      },
+    }),
+    ...(minAmount && {
+      amount: {
+        gte: minAmount,
+      },
+    }),
+    ...(maxAmount && {
+      amount: {
+        lte: maxAmount,
+      },
+    }),
+  }
+
+  const [total, transactions] = await Promise.all([
+    prisma.transactions.count({ where }),
+    prisma.transactions.findMany({
+      where,
+      include: {
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        [sortBy]: order,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+  ])
+
+  const totalPages = Math.ceil(total / limit)
+
+  return {
+    transactions,
+    pagination: {
+      total,
+      totalPages,
+      currentPage: page,
+      limit,
+    },
+  }
 }
 
-export async function getTransactionById(id: string, userId: string) {
-  const transaction = await prisma.transaction.findFirst({
+export async function getTransactionById(transactionId: string, userId: string) {
+  const id = parseInt(transactionId)
+  
+  const transaction = await prisma.transactions.findFirst({
     where: {
       id,
       userId,
     },
     include: {
-      category: true,
+      category: {
+        select: {
+          name: true,
+        },
+      },
     },
   })
 
@@ -65,11 +134,13 @@ export async function getTransactionById(id: string, userId: string) {
 }
 
 export async function updateTransaction(
-  id: string,
+  transactionId: string,
   data: UpdateTransactionInput,
   userId: string
 ) {
-  const transaction = await prisma.transaction.findFirst({
+  const id = parseInt(transactionId)
+  
+  const transaction = await prisma.transactions.findFirst({
     where: {
       id,
       userId,
@@ -81,7 +152,7 @@ export async function updateTransaction(
   }
 
   if (data.categoryId) {
-    const category = await prisma.category.findFirst({
+    const category = await prisma.categories.findFirst({
       where: {
         id: data.categoryId,
         userId,
@@ -97,7 +168,7 @@ export async function updateTransaction(
     }
   }
 
-  const updatedTransaction = await prisma.transaction.update({
+  const updatedTransaction = await prisma.transactions.update({
     where: {
       id,
     },
@@ -110,8 +181,10 @@ export async function updateTransaction(
   return updatedTransaction
 }
 
-export async function deleteTransaction(id: string, userId: string) {
-  const transaction = await prisma.transaction.findFirst({
+export async function deleteTransaction(transactionId: string, userId: string) {
+  const id = parseInt(transactionId)
+  
+  const transaction = await prisma.transactions.findFirst({
     where: {
       id,
       userId,
@@ -122,7 +195,7 @@ export async function deleteTransaction(id: string, userId: string) {
     throw new Error('Transaction not found')
   }
 
-  await prisma.transaction.delete({
+  await prisma.transactions.delete({
     where: {
       id,
     },
@@ -130,7 +203,7 @@ export async function deleteTransaction(id: string, userId: string) {
 }
 
 export async function getBalance(userId: string) {
-  const transactions = await prisma.transaction.findMany({
+  const transactions = await prisma.transactions.findMany({
     where: {
       userId,
     },

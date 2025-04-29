@@ -7,37 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
+model users {
   id            String        @id @default(uuid())
   name          String
   email         String        @unique
   password      String
-  categories    Category[]
-  transactions  Transaction[]
+  categories    categories[]
+  transactions  transactions[]
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  updatedAt     DateTime      @default(now()) @updatedAt
 }
 
-model Category {
-  id            String        @id @default(uuid())
+model categories {
+  id            Int        @id @default(autoincrement())
   name          String
   type          String        // 'INCOME' ou 'EXPENSE'
   userId        String
-  user          User          @relation(fields: [userId], references: [id])
-  transactions  Transaction[]
+  user          users          @relation(fields: [userId], references: [id])
+  transactions  transactions[]
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  updatedAt     DateTime      @default(now()) @updatedAt
 }
 
-model Transaction {
-  id            String        @id @default(uuid())
+model transactions {
+  id            Int        @id @default(autoincrement())
   title         String
   amount        Float
   type          String        // 'INCOME' ou 'EXPENSE'
-  categoryId    String
-  category      Category      @relation(fields: [categoryId], references: [id])
+  categoryId    Int
+  category      categories      @relation(fields: [categoryId], references: [id])
   userId        String
-  user          User          @relation(fields: [userId], references: [id])
+  user          users          @relation(fields: [userId], references: [id])
   createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  updatedAt     DateTime      @default(now()) @updatedAt
 } 
