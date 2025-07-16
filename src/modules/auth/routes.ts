@@ -6,12 +6,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function authRoutes(app: FastifyInstance) {
   app.post('/register', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { name, email, password } = createUserSchema.parse(request.body)
+    const { name, email, password, phone } = createUserSchema.parse(request.body)
 
     const { user } = await registerUser({
       name,
       email,
       password,
+      phone, // ← agora incluído corretamente
     })
 
     const token = await reply.jwtSign(
@@ -72,7 +73,7 @@ export async function authRoutes(app: FastifyInstance) {
       const userId = request.user.sub
       const user = await prisma.users.findUnique({
         where: { id: userId },
-        select: { id: true, name: true, email: true }
+        select: { id: true, name: true, email: true, phone: true } // ← incluído também no /me se desejar
       })
       if (!user) {
         return reply.status(404).send({ message: 'Usuário não encontrado' })
@@ -82,4 +83,4 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(401).send({ message: 'Não autenticado' })
     }
   })
-} 
+}
