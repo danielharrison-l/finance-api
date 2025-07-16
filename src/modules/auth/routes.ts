@@ -6,12 +6,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function authRoutes(app: FastifyInstance) {
   app.post('/register', async (request: FastifyRequest, reply: FastifyReply) => {
-    const { name, email, password } = createUserSchema.parse(request.body)
+    const { name, email, password, phone } = createUserSchema.parse(request.body)
 
     const { user } = await registerUser({
       name,
       email,
       password,
+      phone,
     })
 
     const token = await reply.jwtSign(
@@ -82,4 +83,4 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(401).send({ message: 'Não autenticado' })
     }
   })
-} 
+}
