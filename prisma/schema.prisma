@@ -11,6 +11,7 @@ model users {
   id            String        @id @default(uuid())
   name          String
   email         String        @unique
+  phone         String?
   password      String
   categories    categories[]
   transactions  transactions[]
