@@ -13,7 +13,6 @@ model users {
   email         String        @unique
   phone         String?
   password      String
-  phone         String    
   categories    categories[]
   transactions  transactions[]
   createdAt     DateTime      @default(now())

@@ -12,7 +12,7 @@ export async function authRoutes(app: FastifyInstance) {
       name,
       email,
       password,
-      phone, // ← agora incluído corretamente
+      phone,
     })
 
     const token = await reply.jwtSign(
@@ -39,6 +39,17 @@ export async function authRoutes(app: FastifyInstance) {
         email,
         password,
       })
+
+      if (user.phone && process.env.N8N_URL) {
+        const url = `${process.env.N8N_URL}/template`
+        fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: user.phone }),
+        }).catch((err) => {
+          console.error('Erro ao enviar webhook para N8N:', err)
+        })
+      }
 
       const token = await reply.jwtSign(
         { sub: user.id },

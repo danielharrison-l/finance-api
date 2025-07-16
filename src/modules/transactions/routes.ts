@@ -12,6 +12,7 @@ import {
   transactionFiltersSchema,
   updateTransactionSchema,
 } from './schemas'
+import { prisma } from '@/lib/prisma'
 
 export async function transactionRoutes(app: FastifyInstance) {
   app.addHook('onRequest', async (request: FastifyRequest) => {
@@ -23,6 +24,23 @@ export async function transactionRoutes(app: FastifyInstance) {
     const userId = request.user.sub
 
     const transaction = await createTransaction(data, userId)
+
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { phone: true }
+    })
+
+    if (user?.phone && process.env.N8N_URL) {
+      const url = `${process.env.N8N_URL}/enviar-mensagem`
+      const text = `Transação criada: ${transaction.title}, valor: ${transaction.amount}, tipo: ${transaction.type}, categoria: ${transaction.category?.name || ''}`
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: user.phone, text }),
+      }).catch((err) => {
+        console.error('Erro ao enviar webhook para N8N:', err)
+      })
+    }
 
     return reply.status(201).send(transaction)
   })
